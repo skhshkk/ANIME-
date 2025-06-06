@@ -259,7 +259,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style="text-align: center; color: #999; font-size: 0.85rem;">
-      Built with ❤ using Streamlit · Anime dataset from MyAnimeList.com
+      Built with 🫏 using Streamlit · Anime dataset from MyAnimeList.com
     </div>
     """,
     unsafe_allow_html=True,
