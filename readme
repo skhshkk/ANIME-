@@ -1,0 +1,41 @@
+# 🎌 Anime Recommendation System
+
+A content-based anime recommendation web app built with Python and Streamlit. Users can filter by genres, minimum rating, and episode count to discover anime that match their preferences.
+
+---
+
+## 📖 Overview
+
+Anime fans often struggle to find new series that fit their tastes. This project leverages a content-based filtering approach to recommend anime based on:
+
+- **Genre Matching**: Select one or more genres (e.g., Action, Fantasy).
+- **Rating Filter**: Set a minimum rating threshold.
+- **Episode Count Range**: Choose a range (e.g., 1–50 episodes).
+- **Top-K Selection**: Display the top N results (5–20).
+
+Recommendations are ranked by how many selected genres they share and then by rating. Each result shows the title, genres, rating, episode count, type (TV, Movie, etc.), and a link to MyAnimeList.
+
+---
+
+## 🧩 Features
+
+- **Multiple Genre Selection**  
+  Pick any combination of genres to narrow down the list.
+
+- **Rating & Episode Filters**  
+  Only shows with rating ≥ your chosen value and episodes within your preferred range will appear.
+
+- **Styled UI**  
+  Dark-mode recommendation cards with hover effects for a modern look.
+
+- **Direct MAL Links**  
+  Each recommendation links to its MyAnimeList page for details.
+
+---
+
+## 🛠️ Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/anime-recommender.git
+   cd anime-recommender
