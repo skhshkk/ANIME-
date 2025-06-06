@@ -1,4 +1,4 @@
-# streamlit_app.py
+# app.py
 
 import streamlit as st
 import pandas as pd
@@ -81,7 +81,7 @@ st.markdown(
 # 3) Page Title & Subtitle
 # ───────────────────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-header">🎥 Anime Recommendation System</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-text">Filter by Genre(s), Rating, and Episodes to find your next watch!</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-text">Filter by Genre(s), Rating Bucket, and Episode Count Bucket to find your next watch!</div>', unsafe_allow_html=True)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 4) Load & Cache the Anime Dataset
@@ -89,7 +89,7 @@ st.markdown('<div class="sub-text">Filter by Genre(s), Rating, and Episodes to f
 @st.cache_data
 def load_anime_data(csv_path="Anime_data.csv"):
     """
-    Loads the anime CSV, parses genres into lists, 
+    Loads the anime CSV, parses genres into lists,
     coerces numeric columns, and returns DataFrame + sorted unique genres.
     """
     df = pd.read_csv(csv_path)
@@ -132,23 +132,35 @@ selected_genres = st.sidebar.multiselect(
     "Pick one or more genres:", ALL_GENRES, default=[]
 )
 
-# 5b) Slider for Minimum Rating
-min_rating = st.sidebar.slider(
-    "Minimum Rating:",
-    min_value=float(np.floor(anime_df["Rating"].min())),
-    max_value=float(np.ceil(anime_df["Rating"].max())),
-    value=7.0,
-    step=0.1,
+# 5b) Dropdown for Rating Bucket
+rating_buckets = {
+    "Any": (0.0, 10.0),
+    "1–2": (1.0, 2.0),
+    "3–5": (3.0, 5.0),
+    "5–7": (5.0, 7.0),
+    "7–9": (7.0, 9.0),
+    "9–10": (9.0, 10.0),
+}
+selected_rating_bucket = st.sidebar.selectbox(
+    "Select Rating Bucket:",
+    options=list(rating_buckets.keys()),
+    index=list(rating_buckets.keys()).index("7–9")
 )
 
-# 5c) Episodes Range Slider
-max_eps = int(anime_df["Episodes"].max())
-episodes_range = st.sidebar.slider(
-    "Episode Count Range:",
-    min_value=0,
-    max_value=max_eps,
-    value=(0, max_eps),
-    step=1,
+# 5c) Dropdown for Episodes Bucket
+episode_buckets = {
+    "Any": (0, anime_df["Episodes"].max()),
+    "1 (Movie/OVA)": (1, 1),
+    "1–12": (1, 12),
+    "13–24": (13, 24),
+    "25–50": (25, 50),
+    "51–100": (51, 100),
+    "101+": (101, anime_df["Episodes"].max()),
+}
+selected_episode_bucket = st.sidebar.selectbox(
+    "Select Episode Bucket:",
+    options=list(episode_buckets.keys()),
+    index=list(episode_buckets.keys()).index("1–12")
 )
 
 # 5d) Number of Recommendations to Show
@@ -166,37 +178,40 @@ should_recommend = st.sidebar.button("🔎 Recommend Anime")
 # ───────────────────────────────────────────────────────────────────────────────
 # 6) Recommendation Logic Function
 # ───────────────────────────────────────────────────────────────────────────────
-def recommend_anime(df, genres, min_rating, eps_range, top_k=10):
+def recommend_anime(df, genres, rating_bucket, episode_bucket, top_k=10):
     """
-    Filters anime by rating and episodes, then ranks by:
+    Filters anime by rating bucket and episode bucket, then ranks by:
      1) Number of matching genres (if any selected)
      2) Rating (descending)
     Returns top_k results.
     """
-    low_eps, high_eps = eps_range
+    # Unpack numeric ranges for the buckets
+    min_rating, max_rating = rating_buckets[rating_bucket]
+    min_eps, max_eps = episode_buckets[episode_bucket]
 
-    # Filter by rating and episodes
+    # 1) Filter by rating and episodes
     filtered = df[
         (df["Rating"] >= min_rating)
-        & (df["Episodes"] >= low_eps)
-        & (df["Episodes"] <= high_eps)
+        & (df["Rating"] <= max_rating)
+        & (df["Episodes"] >= min_eps)
+        & (df["Episodes"] <= max_eps)
     ].copy()
 
     if genres:
-        # Compute how many of the selected genres each anime has
+        # 2) Compute number of matching genres
         def count_matches(row):
             return sum(1 for g in row["GenreList"] if g in genres)
         filtered["GenreMatchCount"] = filtered.apply(count_matches, axis=1)
 
-        # Keep only those with at least 1 genre match
+        # Keep only anime that match at least one selected genre
         filtered = filtered[filtered["GenreMatchCount"] > 0]
 
-        # Sort by match count (desc), then rating (desc)
+        # 3) Sort by match count (desc), then rating (desc)
         filtered = filtered.sort_values(
             ["GenreMatchCount", "Rating"], ascending=[False, False]
         )
     else:
-        # If no genres selected, just sort by rating
+        # If no genres selected, simply sort by rating
         filtered = filtered.sort_values("Rating", ascending=False)
         filtered["GenreMatchCount"] = 0
 
@@ -210,8 +225,8 @@ if should_recommend:
         results_df = recommend_anime(
             anime_df,
             selected_genres,
-            min_rating,
-            episodes_range,
+            selected_rating_bucket,
+            selected_episode_bucket,
             top_k=K,
         )
 
